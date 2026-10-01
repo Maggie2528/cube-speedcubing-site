@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>速拧驿站-NA45 · 魔方速拧交流站</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --text: #1f2430;
+    --text-sub: #5a6272;
+    --brand: #e94f37;
+    --brand-dark: #c73e28;
+    --accent: #1b7fbd;
+    --border: #e6e8ee;
+    --cube-yellow: #f5c518;
+    --cube-green: #27a35a;
+    --cube-blue: #1b7fbd;
+    --cube-orange: #f2822a;
+    --cube-red: #e94f37;
+    --cube-white: #ffffff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  /* ===== 顶部导航 ===== */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 24px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .logo .mini-cube {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    background: conic-gradient(var(--cube-red) 0 25%, var(--cube-white) 0 50%, var(--cube-blue) 0 75%, var(--cube-yellow) 0 100%);
+    border: 1px solid #d8dbe2;
+  }
+  .nav-links { display: flex; gap: 4px; }
+  .nav-links a {
+    text-decoration: none;
+    color: var(--text-sub);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 15px;
+    transition: all .2s;
+  }
+  .nav-links a:hover { color: var(--brand); background: #fdf0ee; }
+
+  /* ===== Hero ===== */
+  .hero {
+    background:
+      radial-gradient(1200px 500px at 80% -10%, #fdeeeb 0%, transparent 60%),
+      radial-gradient(800px 400px at 10% 110%, #e9f3fa 0%, transparent 60%);
+    padding: 88px 24px 80px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: 44px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+  .hero h1 .hl { color: var(--brand); }
+  .hero p {
+    color: var(--text-sub);
+    font-size: 17px;
+    max-width: 640px;
+    margin: 0 auto 32px;
+  }
+  .hero .btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-block;
+    padding: 12px 28px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all .2s;
+  }
+  .btn-primary { background: var(--brand); color: #fff; }
+  .btn-primary:hover { background: var(--brand-dark); transform: translateY(-2px); }
+  .btn-outline { border: 1.5px solid var(--text); color: var(--text); }
+  .btn-outline:hover { background: var(--text); color: #fff; transform: translateY(-2px); }
+
+  /* 通用配图 */
+  .img-banner {
+    width: 100%;
+    max-width: 860px;
+    border-radius: 18px;
+    display: block;
+    margin: 0 auto;
+    box-shadow: 0 14px 36px rgba(31,36,48,.14);
+    border: 1px solid var(--border);
+  }
+  .hero .img-banner { margin-top: 44px; }
+  .img-caption {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-sub);
+    margin-top: 12px;
+    opacity: .8;
+  }
+
+  /* 大魔方装饰 */
+  .big-cube {
+    width: 120px; height: 120px;
+    margin: 0 auto 28px;
+    border-radius: 18px;
+    background:
+      linear-gradient(135deg,
+        var(--cube-red) 0 33.3%,
+        var(--cube-yellow) 33.3% 66.6%,
+        var(--cube-green) 66.6% 100%),
+      linear-gradient(45deg,
+        var(--cube-blue) 0 33.3%,
+        var(--cube-orange) 33.3% 66.6%,
+        var(--cube-white) 66.6% 100%);
+    background-blend-mode: multiply;
+    box-shadow: 0 12px 32px rgba(233,79,55,.25);
+    position: relative;
+  }
+  .big-cube::before {
+    content: "";
+    position: absolute; inset: 30%;
+    background: repeating-linear-gradient(0deg, transparent 0 24%, #00000022 24% 26%);
+    border-radius: 6px;
+  }
+
+  /* ===== 通用 section ===== */
+  section { padding: 72px 24px; }
+  .container { max-width: 1080px; margin: 0 auto; }
+  .section-head { text-align: center; margin-bottom: 48px; }
+  .section-head .tag {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--brand);
+    background: #fdeeeb;
+    padding: 4px 14px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+  .section-head.blue .tag { color: var(--accent); background: #e9f3fa; }
+  .section-head h2 { font-size: 32px; font-weight: 800; margin-bottom: 10px; }
+  .section-head p { color: var(--text-sub); max-width: 560px; margin: 0 auto; }
+
+  /* ===== 新人区：选魔方 ===== */
+  #newbie { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .pick-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 22px;
+  }
+  .card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 26px;
+    transition: all .25s;
+  }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 10px 28px rgba(31,36,48,.08); }
+  .card .step-no {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; color: #fff;
+    margin-bottom: 14px;
+    font-size: 15px;
+  }
+  .card h3 { font-size: 18px; margin-bottom: 10px; }
+  .card p, .card li { color: var(--text-sub); font-size: 14.5px; }
+  .card ul { padding-left: 18px; margin-top: 8px; }
+  .card li { margin-bottom: 4px; }
+
+  /* 预算表 */
+  .budget-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 40px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    font-size: 14.5px;
+  }
+  .budget-table th {
+    background: var(--text);
+    color: #fff;
+    text-align: left;
+    padding: 12px 18px;
+    font-weight: 600;
+  }
+  .budget-table td { padding: 12px 18px; border-top: 1px solid var(--border); color: var(--text-sub); }
+  .budget-table td:first-child { font-weight: 700; color: var(--text); white-space: nowrap; }
+  .budget-table tr:hover td { background: #fdf0ee; }
+
+  .tip-box {
+    margin-top: 28px;
+    background: #fff8e6;
+    border: 1px solid #f2e2b3;
+    border-left: 4px solid var(--cube-yellow);
+    border-radius: 12px;
+    padding: 18px 22px;
+    font-size: 14.5px;
+    color: #6b5716;
+  }
+  .tip-box b { color: #4d3f0f; }
+
+  /* ===== 提速区 ===== */
+  .phase {
+    display: flex;
+    gap: 22px;
+    align-items: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 22px;
+    transition: all .25s;
+  }
+  .phase:hover { box-shadow: 0 10px 28px rgba(31,36,48,.07); transform: translateX(4px); }
+  .phase-no {
+    flex-shrink: 0;
+    width: 56px; height: 56px;
+    border-radius: 14px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: #fff; font-weight: 800;
+    font-size: 20px;
+    line-height: 1;
+  }
+  .phase-no small { font-size: 10px; font-weight: 600; opacity: .85; margin-bottom: 2px; letter-spacing: 1px; }
+  .phase h3 { font-size: 19px; margin-bottom: 6px; }
+  .phase .goal {
+    display: inline-block;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--accent);
+    background: #e9f3fa;
+    border-radius: 999px;
+    padding: 2px 12px;
+    margin-bottom: 10px;
+  }
+  .phase p, .phase li { color: var(--text-sub); font-size: 14.5px; }
+  .phase ul { padding-left: 18px; margin-top: 6px; }
+  .phase li { margin-bottom: 4px; }
+  .phase li b { color: var(--text); }
+
+  .practice-box {
+    margin-top: 36px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+  }
+  .practice-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    text-align: center;
+  }
+  .practice-item .ico { font-size: 30px; margin-bottom: 8px; }
+  .practice-item h4 { font-size: 16px; margin-bottom: 6px; }
+  .practice-item p { font-size: 13.5px; color: var(--text-sub); }
+
+  /* ===== 视频区 ===== */
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 26px;
+    margin-bottom: 34px;
+  }
+  .video-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all .25s;
+  }
+  .video-card:hover { box-shadow: 0 12px 30px rgba(31,36,48,.10); transform: translateY(-4px); }
+  .video-card .video-wrap {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%;
+    background: #000;
+  }
+  .video-card iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+  .video-card .video-info { padding: 18px 22px 22px; }
+  .video-card h3 { font-size: 17px; margin-bottom: 6px; }
+  .video-card p { font-size: 13.5px; color: var(--text-sub); }
+
+  .playlist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 18px;
+  }
+  .playlist-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px;
+    text-decoration: none;
+    color: var(--text);
+    transition: all .25s;
+  }
+  .playlist-card:hover { background: #e9f3fa; border-color: #bcd9ec; transform: translateY(-3px); }
+  .playlist-card .pl-ico {
+    flex-shrink: 0;
+    width: 46px; height: 46px;
+    border-radius: 12px;
+    background: var(--accent);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .playlist-card h4 { font-size: 15.5px; margin-bottom: 4px; }
+  .playlist-card p { font-size: 13px; color: var(--text-sub); }
+
+  /* ===== 页脚 ===== */
+  footer {
+    background: var(--text);
+    color: #aab0bd;
+    text-align: center;
+    padding: 36px 24px;
+    font-size: 14px;
+  }
+  footer .footer-cube {
+    width: 30px; height: 30px;
+    border-radius: 7px;
+    background: conic-gradient(var(--cube-red) 0 25%, var(--cube-white) 0 50%, var(--cube-blue) 0 75%, var(--cube-yellow) 0 100%);
+    margin: 0 auto 12px;
+  }
+
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 30px; }
+    .nav { padding: 0 12px; }
+    .nav-links a { padding: 6px 6px; font-size: 12px; }
+    .phase { flex-direction: column; }
+    section { padding: 52px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <nav class="nav">
+    <a class="logo" href="#top">
+      <span class="mini-cube"></span> 速拧驿站-NA45
+    </a>
+    <div class="nav-links">
+      <a href="#newbie">新人区</a>
+      <a href="#speed">40s提速区</a>
+      <a href="#videos">教学视频</a>
+      <a href="timer.html">计时器</a>
+      <a href="scramble.html">打乱公式</a>
+    </div>
+  </nav>
+</header>
+
+<!-- ===== Hero ===== -->
+<div class="hero" id="top">
+  <div class="big-cube"></div>
+  <h1>从<span class="hl"> 60 秒</span>到<span class="hl"> 20 秒</span>，一步一个脚印</h1>
+  <p>这里是魔方速拧爱好者的交流角落。刚入坑不知道买什么魔方？已经进 40 秒但卡瓶颈？往下看，都有答案。</p>
+  <div class="btns">
+    <a class="btn btn-primary" href="#newbie">我是新人，先选魔方</a>
+    <a class="btn btn-outline" href="#speed">我要破 40 秒</a>
+    <a class="btn btn-outline" href="timer.html">计时器 & 打乱工具</a>
+  </div>
+  <img class="img-banner" src="images/hero.png" alt="速拧比赛中的三阶魔方">
+  <p class="img-caption">拧动之间，就是速度的艺术</p>
+</div>
+
+<!-- ===== 新人区 ===== -->
+<section id="newbie">
+  <div class="container">
+    <div class="section-head">
+      <span class="tag">新人区</span>
+      <h2>怎么挑一把适合自己的魔方</h2>
+      <p>新手最容易踩的坑：要么买地摊十块钱的"手感劝退方"，要么一步到位买旗舰结果完全用不出差别。</p>
+    </div>
+
+    <img class="img-banner" src="images/pick-cubes.png" alt="一排不同配色的三阶速拧魔方">
+    <p class="img-caption" style="margin-bottom: 44px;">同样的结构，不同的手感——选魔方就是找"合手"的那一把</p>
+
+    <div class="pick-grid">
+      <div class="card">
+        <div class="step-no" style="background: var(--cube-red);">1</div>
+        <h3>先确定预算档位</h3>
+        <p>三阶魔方的手感差异主要体现在：</p>
+        <ul>
+          <li><b>磁力定位</b>：磁铁让转动有"吸附感"，容错和稳定性大幅提升，强烈建议直接上磁力版</li>
+          <li><b>容错性能</b>：没对齐也能转过去，减少卡壳和pop（炸棱）</li>
+          <li><b>重量与尺寸</b>：主流 55~56mm，太轻太重都影响手感</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="step-no" style="background: var(--cube-orange);">2</div>
+        <h3>主流品牌扫盲</h3>
+        <ul>
+          <li><b>魔域文化（MoYu）</b>：RS3M 系列是公认的性价比之王，新手闭眼入</li>
+          <li><b>GAN</b>：旗舰代表，手感轻盈顺滑，价格较高，适合预算充足或进阶后换</li>
+          <li><b>奇艺（QiYi）</b>：中端价位选择丰富，XMD 系列口碑好</li>
+          <li><b>淦源（GAN 旗下）/ 其他</b>：各有特色，可以等有手感偏好后再试</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="step-no" style="background: var(--cube-green);">3</div>
+        <h3>试手感的小技巧</h3>
+        <ul>
+          <li>顺滑 ≠ 好：太滑的魔方容易转过头，稳定性更重要</li>
+          <li>拿到手先空转几分钟"磨合"，别急着下结论</li>
+          <li>可以买不同润滑脂（黏/稀）自己调，但新手先用原厂手感</li>
+          <li>预算内买<b>两把不同的</b>换着玩，比买一把贵的更能找到自己的手感</li>
+        </ul>
+      </div>
+    </div>
+
+    <table class="budget-table">
+      <thead>
+        <tr><th>预算</th><th>推荐</th><th>适合人群</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>30~60 元</td><td>魔域 RS3M 系列（磁力版）</td><td>纯新手，不确定自己能坚持多久</td></tr>
+        <tr><td>60~120 元</td><td>RS3M 高配 / 奇迹系列 / 奇艺中端</td><td>已学会复原，准备练进 60 秒</td></tr>
+        <tr><td>120~250 元</td><td>GAN 中端、各厂旗舰</td><td>进 40 秒以内，开始追求手感</td></tr>
+        <tr><td>250 元以上</td><td>GAN 旗舰 + 润滑定制</td><td>sub-30 选手，手感偏好明确</td></tr>
+      </tbody>
+    </table>
+
+    <div class="tip-box">
+      <b>新人避坑提醒：</b>不要买"异形大礼包"，不要买无磁力的入门级（除非只是随便玩玩），也不要迷信"冠军同款"——手感是非常个人的事，适合自己的才是最好的。
+    </div>
+  </div>
+</section>
+
+<!-- ===== 40s 提速区 ===== -->
+<section id="speed">
+  <div class="container">
+    <div class="section-head blue">
+      <span class="tag">40s 内提速区</span>
+      <h2>进了 40 秒，怎么继续往下压</h2>
+      <p>40 秒这个阶段，公式量已经不是主要矛盾了。瓶颈几乎都出在 F2L、观察和手法上。按下面四步走，稳压到 25 秒左右。</p>
+    </div>
+
+    <img class="img-banner" src="images/f2l-motion.png" alt="高速拧动魔方的特写">
+    <p class="img-caption" style="margin-bottom: 44px;">手速的天花板很快就会到，观察和停顿才是拉开差距的地方</p>
+
+    <div class="phase">
+      <div class="phase-no" style="background: var(--cube-blue);"><small>PHASE</small>1</div>
+      <div>
+        <h3>把 F2L 当成核心来练</h3>
+        <span class="goal">目标：F2L 不卡顿，整体单次复原里 F2L 占一半时间以内</span>
+        <p>40 秒选手最典型的特征就是 F2L 打磕巴——每对棱角都要停下来想。</p>
+        <ul>
+          <li><b>告别"先藏角再藏棱"的死记法</b>，理解每一组 case 为什么这么走，学会就地组合与拆分</li>
+          <li>每天专门做 <b>F2L 单项练习</b>：打乱后只做十字 + F2L，记录这一段的用时</li>
+          <li>掌握 <b>空槽技巧（empty slot）</b>：利用还没填的槽位做中转，减少步骤</li>
+          <li>F2L 熟练后，光这一项就能从 40 秒提到 30 秒以内</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-no" style="background: var(--cube-green);"><small>PHASE</small>2</div>
+      <div>
+        <h3>观察与预判：慢拧练习</h3>
+        <span class="goal">目标：做完十字时眼睛已经在找第一组 F2L</span>
+        <p>提速不是转得更快，而是<b>停顿更少</b>。人的手速上限其实很快就到了，观察才是真正的时间黑洞。</p>
+        <ul>
+          <li><b>慢拧练习（slow solving）</b>：用 70% 的速度连续复原，强迫自己全程不停顿、持续观察，这是公认最有效的提速训练</b></li>
+          <li>十字练习：<b>盲拧十字</b>（观察 15 秒内记住整个十字，闭眼做完），练到 8 秒内规划完成</li>
+          <li>F2L 过程中眼睛永远看"下一组"，而不是手上这一组</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-no" style="background: var(--cube-yellow);"><small>PHASE</small>3</div>
+      <div>
+        <h3>补齐公式：OLL / PLL 分批学</h3>
+        <span class="goal">目标：两步复原（2-look OLL + 2-look PLL）稳定后，逐步上完整公式</span>
+        <p>40 秒阶段通常只会两步 OLL/PLL，这完全够用；等 F2L 提上来后再分批扩：</p>
+        <ul>
+          <li>优先补 <b>PLL 全部 21 个</b>（比 OLL 更常用、收益更直接），尤其先啃 G 组和 N 组</li>
+          <li>OLL 按"形状分族"背（点、线、拐角、十字类），每周 5 个，两个月内补完 57 个</li>
+          <li>公式别死记：每个 case 理解结构 + 反复练到肌肉记忆，重点练<b>识别速度</b>而不是手法速度</li>
+          <li>学新公式时同时练它的<b>左右镜像版本</b>，实战遇到不换手</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-no" style="background: var(--cube-red);"><small>PHASE</small>4</div>
+      <div>
+        <h3>手法与指法：让每一步都省时间</h3>
+        <span class="goal">目标：消除双手换手、手腕翻转、指法别扭的动作</span>
+        <ul>
+          <li>学会<b>双层转（wide move）和转体 x/y</b>，用它们替代别扭的单层连拧</li>
+          <li>常用组合练成手指独立完成：如 <b>(R U R' U')</b> 六连拨，练到一气呵成</li>
+          <li>录一段自己复原的慢动作视频，逐帧看哪里停了——停顿点就是练习点</li>
+          <li>计时复盘：每次练 25 把，重点看 <b>最差 5 把</b>差在哪（步骤多？观察慢？公式忘？）</li>
+        </ul>
+      </div>
+    </div>
+
+    <img class="img-banner" src="images/desk.png" alt="魔方练习桌面：计时器、手机和笔记本">
+    <p class="img-caption" style="margin-bottom: 30px;">计时、记录、复盘——进步都藏在这些小习惯里</p>
+
+    <div class="practice-box">
+      <div class="practice-item">
+        <div class="ico">⏱️</div>
+        <h4>每日 30 分钟建议节奏</h4>
+        <p>10 分钟慢拧 · 10 分钟 F2L 单项 · 5 分钟十字 · 5 分钟计时赛</p>
+      </div>
+      <div class="practice-item">
+        <div class="ico">📉</div>
+        <h4>看趋势别看单把</h4>
+        <p>用 ao5 / ao12 衡量水平，单把破纪录不代表进步，稳定均值下降才是</p>
+      </div>
+      <div class="practice-item">
+        <div class="ico">🧠</div>
+        <h4>瓶颈期换个脑子</h4>
+        <p>卡住时练练盲拧十字、四阶或单手，换个维度反而会打开思路</p>
+      </div>
+      <div class="practice-item">
+        <div class="ico">🔥</div>
+        <h4>别追手感玄学</h4>
+        <p>sub-25 之前，练时间的投入回报远大于换魔方、调润滑的回报</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 教学视频 ===== -->
+<section id="videos" style="background: var(--surface); border-top: 1px solid var(--border);">
+  <div class="container">
+    <div class="section-head">
+      <span class="tag">教学视频</span>
+      <h2>边看边学，跟着高手拧</h2>
+      <p>精选 B 站真实教学视频，可直接在页面内播放；下方还有优质教程合集入口，够学几个月。</p>
+    </div>
+
+    <div class="video-grid">
+      <div class="video-card">
+        <div class="video-wrap">
+          <iframe src="https://player.bilibili.com/player.html?bvid=BV1VT411k7rd&autoplay=0&danmaku=0" scrolling="no" allowfullscreen="true"></iframe>
+        </div>
+        <div class="video-info">
+          <h3>零基础学魔方！最简单的魔方还原入门教程</h3>
+          <p>刚入坑先看这个：从零开始学会复原三阶，打牢层先法基础</p>
+        </div>
+      </div>
+      <div class="video-card">
+        <div class="video-wrap">
+          <iframe src="https://player.bilibili.com/player.html?bvid=BV1pM411M7S7&autoplay=0&danmaku=0" scrolling="no" allowfullscreen="true"></iframe>
+        </div>
+        <div class="video-info">
+          <h3>最简单的三阶魔方 CFOP 教程</h3>
+          <p>从层先法过渡到 CFOP 的第一课，重点讲清 F2L 的"思路"而不是死记公式</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="playlist-grid">
+      <a class="playlist-card" href="https://space.bilibili.com/295819754/channel/collectiondetail?sid=757379" target="_blank" rel="noopener">
+        <div class="pl-ico">📺</div>
+        <div>
+          <h4>魔方小站 · 速拧 CFOP 完全版教程（20 集）</h4>
+          <p>Cross / F2L / OLL / PLL 四步逐集精讲，体系化入门速拧首选</p>
+        </div>
+      </a>
+      <a class="playlist-card" href="https://space.bilibili.com/474562224/lists?sid=669269" target="_blank" rel="noopener">
+        <div class="pl-ico">🎯</div>
+        <div>
+          <h4>干货魔方 · 三阶 F2L 速拧教程（40+ 集）</h4>
+          <p>41 个 F2L 公式逐个配慢动作指法教学，专治 40 秒卡瓶颈</p>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-cube"></div>
+  速拧驿站-NA45 · 魔方速拧交流站 —— 配图由 AI 生成，教学视频来自 B 站 UP 主 · 更多板块（CFOP 专题、练手记录、社区讨论）建设中
+</footer>
+
+</body>
+</html>

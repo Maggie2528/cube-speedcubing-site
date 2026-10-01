@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>速拧计时器 · 速拧驿站-NA45</title>
+<style>
+  :root {
+    --bg: #f7f8fa; --surface: #ffffff; --text: #1f2430; --sub: #5a6272;
+    --brand: #e94f37; --brand-dark: #c73e28; --accent: #1b7fbd; --border: #e6e8ee;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+
+  header { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+  .nav { max-width: 1080px; margin: 0 auto; padding: 0 20px; height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; color: var(--text); text-decoration: none; white-space: nowrap; }
+  .logo .mini-cube { width: 24px; height: 24px; border-radius: 6px; background: conic-gradient(var(--brand) 0 25%, #fff 0 50%, var(--accent) 0 75%, #f5c518 0 100%); border: 1px solid #d8dbe2; flex-shrink: 0; }
+  .nav-links { display: flex; gap: 2px; flex-wrap: wrap; justify-content: flex-end; }
+  .nav-links a { text-decoration: none; color: var(--sub); padding: 7px 10px; border-radius: 8px; font-size: 14px; transition: all .2s; white-space: nowrap; }
+  .nav-links a:hover { color: var(--brand); background: #fdf0ee; }
+  .nav-links a.active { color: var(--brand); background: #fdf0ee; font-weight: 700; }
+
+  .wrap { max-width: 900px; margin: 0 auto; padding: 28px 20px 70px; }
+
+  /* 打乱栏 */
+  .scramble-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .scramble-bar .label { font-size: 13px; color: var(--sub); font-weight: 700; flex-shrink: 0; }
+  .scramble-bar .formula { font-family: Consolas, Menlo, monospace; font-size: 17px; font-weight: 700; letter-spacing: 1px; flex: 1; min-width: 200px; }
+  .mini-btn { border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; padding: 7px 14px; border-radius: 8px; cursor: pointer; text-decoration: none; transition: all .2s; white-space: nowrap; }
+  .mini-btn:hover { background: #e9f3fa; border-color: #bcd9ec; }
+
+  /* 计时舞台 */
+  .stage {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
+    padding: 46px 20px 40px; text-align: center; cursor: pointer; user-select: none;
+    transition: border-color .2s, background .2s; touch-action: manipulation;
+  }
+  .stage.ready { border-color: #27a35a; background: #f4fbf7; }
+  .stage.inspect { border-color: #f5c518; background: #fffdf2; }
+  .stage.running { border-color: var(--brand); background: #fffaf9; }
+  .time {
+    font-family: Consolas, Menlo, monospace;
+    font-size: clamp(64px, 15vw, 118px); font-weight: 800; line-height: 1.1;
+    font-variant-numeric: tabular-nums; letter-spacing: 2px;
+  }
+  .time.inspect { color: #b98d00; }
+  .hint { color: var(--sub); font-size: 14.5px; margin-top: 8px; min-height: 22px; }
+
+  /* 控制行 */
+  .ctrl { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 18px 2px 34px; flex-wrap: wrap; }
+  .ctrl label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--sub); cursor: pointer; }
+  .ctrl label input { width: 16px; height: 16px; accent-color: var(--brand); }
+  .ctrl .kb { font-size: 12.5px; color: var(--sub); background: var(--surface); border: 1px solid var(--border); padding: 5px 12px; border-radius: 8px; }
+  .danger-btn { border: 1px solid #f2c9c2; background: #fff; color: var(--brand-dark); font-size: 13px; padding: 7px 14px; border-radius: 8px; cursor: pointer; transition: all .2s; }
+  .danger-btn:hover { background: #fdf0ee; }
+  .danger-btn.armed { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+  /* 统计 */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 30px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 10px; text-align: center; }
+  .stat .v { font-family: Consolas, Menlo, monospace; font-size: 21px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat .k { font-size: 12px; color: var(--sub); margin-top: 2px; }
+  .stat.hl .v { color: var(--brand); }
+
+  /* 历史 */
+  h2.sec { font-size: 18px; margin-bottom: 14px; }
+  .history { list-style: none; }
+  .history li {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 16px; margin-bottom: 8px; font-size: 14px;
+  }
+  .history .no { color: var(--sub); width: 34px; font-size: 13px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .history .t { font-family: Consolas, Menlo, monospace; font-weight: 700; font-size: 15.5px; width: 76px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .history .t.best { color: var(--brand); }
+  .history .sc { color: #9aa1af; font-family: Consolas, Menlo, monospace; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .empty { color: var(--sub); font-size: 14px; text-align: center; padding: 26px 0; background: var(--surface); border: 1px dashed var(--border); border-radius: 12px; }
+
+  footer { background: var(--text); color: #aab0bd; text-align: center; padding: 26px 20px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <nav class="nav">
+    <a class="logo" href="index.html"><span class="mini-cube"></span> 速拧驿站-NA45</a>
+    <div class="nav-links">
+      <a href="index.html">首页</a>
+      <a href="index.html#newbie">新人区</a>
+      <a href="index.html#speed">40s提速区</a>
+      <a href="index.html#videos">教学视频</a>
+      <a href="timer.html" class="active">计时器</a>
+      <a href="scramble.html">打乱公式</a>
+    </div>
+  </nav>
+</header>
+
+<div class="wrap">
+  <!-- 打乱栏 -->
+  <div class="scramble-bar">
+    <span class="label">本次打乱</span>
+    <span class="formula" id="scramble">—</span>
+    <button class="mini-btn" id="btnNew">换一个</button>
+    <a class="mini-btn" href="scramble.html">看展开图 →</a>
+  </div>
+
+  <!-- 计时 -->
+  <div class="stage" id="stage">
+    <div class="time" id="time">0.00</div>
+    <div class="hint" id="hint">按住空格键（或点击此处）开始计时</div>
+  </div>
+
+  <div class="ctrl">
+    <label><input type="checkbox" id="inspChk"> 15 秒观察（WCA 规则）</label>
+    <span class="kb">空格：按住松开开始 / 按下停止 · 手机：点击屏幕</span>
+    <button class="danger-btn" id="btnClear">清空记录</button>
+  </div>
+
+  <!-- 统计 -->
+  <div class="stats">
+    <div class="stat"><div class="v" id="stN">0</div><div class="k">计次</div></div>
+    <div class="stat hl"><div class="v" id="stBest">—</div><div class="k">最佳</div></div>
+    <div class="stat"><div class="v" id="stLast">—</div><div class="k">上次</div></div>
+    <div class="stat"><div class="v" id="stMean">—</div><div class="k">平均</div></div>
+    <div class="stat"><div class="v" id="stAo5">—</div><div class="k">ao5</div></div>
+    <div class="stat"><div class="v" id="stAo12">—</div><div class="k">ao12</div></div>
+  </div>
+
+  <h2 class="sec">历史记录（最近 30 次）</h2>
+  <ul class="history" id="history"></ul>
+  <div class="empty" id="empty" style="display:none;">还没有记录，先来一把！</div>
+</div>
+
+<footer>速拧驿站-NA45 · 速拧计时器 —— 数据保存在本机浏览器中，清缓存会丢失记录</footer>
+
+<script>
+(function(){
+  "use strict";
+  // ===== 打乱生成 =====
+  var FACES = ["U","D","R","L","F","B"];
+  var AXIS  = {U:0,D:0,R:1,L:1,F:2,B:2};
+  var SUF   = ["", "'", "2"];
+  function genScramble(len){
+    var seq = [], last = -1, last2 = -1;
+    while (seq.length < len) {
+      var f = Math.floor(Math.random()*6);
+      if (f === last) continue;
+      if (last2 >= 0 && AXIS[FACES[f]] === AXIS[FACES[last]] && AXIS[FACES[last]] === AXIS[FACES[last2]]) continue;
+      seq.push(FACES[f] + SUF[Math.floor(Math.random()*3)]);
+      last2 = last; last = f;
+    }
+    return seq.join(" ");
+  }
+
+  // ===== 元素 =====
+  var stage = document.getElementById("stage"),
+      elTime = document.getElementById("time"),
+      elHint = document.getElementById("hint"),
+      elScram = document.getElementById("scramble"),
+      inspChk = document.getElementById("inspChk");
+
+  var STORE = "sula_timer_v1";
+  var times = [];
+  try { times = JSON.parse(localStorage.getItem(STORE) || "[]"); } catch(e) { times = []; }
+  var scramble = "";
+
+  var st = { phase: "idle", t0: 0, inspT0: 0, raf: 0, ready: false, holdTimer: 0, cooldownUntil: 0, spaceDown: false };
+
+  function fmt(ms){ return (ms/1000).toFixed(2); }
+  function now(){ return performance.now(); }
+
+  function newScramble(){
+    scramble = genScramble(20);
+    elScram.textContent = scramble;
+  }
+
+  function setHint(t){ elHint.textContent = t; }
+
+  function startInspect(){
+    st.phase = "inspect"; st.inspT0 = now();
+    stage.classList.add("inspect");
+    elTime.classList.add("inspect");
+    elTime.textContent = "15.00";
+    setHint("观察中 —— 想好第一步！按空格 / 点击开始复原");
+    (function loop(){
+      if (st.phase !== "inspect") return;
+      var left = 15000 - (now() - st.inspT0);
+      if (left <= 0) { startSolve(); return; }
+      elTime.textContent = fmt(left);
+      st.raf = requestAnimationFrame(loop);
+    })();
+  }
+
+  function startSolve(){
+    st.phase = "running"; st.t0 = now();
+    stage.className = "stage running";
+    elTime.className = "time";
+    setHint("计时中 —— 按空格或点击停止");
+    (function loop(){
+      if (st.phase !== "running") return;
+      elTime.textContent = fmt(now() - st.t0);
+      st.raf = requestAnimationFrame(loop);
+    })();
+  }
+
+  function stopSolve(){
+    var t = Math.round(now() - st.t0);
+    st.phase = "idle";
+    stage.className = "stage";
+    elTime.className = "time";
+    elTime.textContent = fmt(t);
+    setHint("按住空格键开始下一把");
+    times.push({ t: t, s: scramble });
+    if (times.length > 500) times = times.slice(-500);
+    try { localStorage.setItem(STORE, JSON.stringify(times)); } catch(e){}
+    st.cooldownUntil = now() + 600;
+    render();
+    newScramble();
+  }
+
+  // ===== 键盘：按住-松开 =====
+  function onDown(){
+    if (st.phase === "running") { stopSolve(); return; }
+    if (st.phase === "inspect") { startSolve(); return; }
+    if (st.phase === "idle" && now() > st.cooldownUntil && !st.spaceDown) {
+      clearTimeout(st.holdTimer);
+      st.holdTimer = setTimeout(function(){
+        st.ready = true;
+        stage.classList.add("ready");
+        setHint(inspChk.checked ? "松开进入 15 秒观察" : "松开开始计时");
+      }, 300);
+    }
+    st.spaceDown = true;
+  }
+  function onUp(){
+    st.spaceDown = false;
+    clearTimeout(st.holdTimer);
+    stage.classList.remove("ready");
+    if (st.ready) {
+      st.ready = false;
+      if (inspChk.checked) startInspect(); else startSolve();
+    }
+  }
+
+  document.addEventListener("keydown", function(e){
+    if (e.code === "Space") { e.preventDefault(); if (!e.repeat) onDown(); }
+  });
+  document.addEventListener("keyup", function(e){
+    if (e.code === "Space") { e.preventDefault(); onUp(); }
+  });
+
+  // ===== 指针：点击触发 =====
+  stage.addEventListener("pointerdown", function(e){
+    e.preventDefault();
+    if (st.phase === "running") { stopSolve(); return; }
+    if (st.phase === "inspect") { startSolve(); return; }
+    if (st.phase === "idle" && now() > st.cooldownUntil) {
+      if (inspChk.checked) startInspect(); else startSolve();
+    }
+  });
+
+  document.getElementById("btnNew").addEventListener("click", newScramble);
+
+  // 清空记录：两次点击确认（不依赖原生 confirm，沙箱/内嵌页面里 confirm 会被拦截）
+  var btnClear = document.getElementById("btnClear");
+  var clearArmed = false, clearTimer = 0;
+  btnClear.addEventListener("click", function(){
+    if (!clearArmed) {
+      clearArmed = true;
+      btnClear.textContent = "再点一次确认清空";
+      btnClear.classList.add("armed");
+      clearTimeout(clearTimer);
+      clearTimer = setTimeout(function(){
+        clearArmed = false;
+        btnClear.textContent = "清空记录";
+        btnClear.classList.remove("armed");
+      }, 3000);
+      return;
+    }
+    clearTimeout(clearTimer);
+    clearArmed = false;
+    btnClear.textContent = "清空记录";
+    btnClear.classList.remove("armed");
+    times = [];
+    try { localStorage.setItem(STORE, "[]"); } catch(e){}
+    render();
+  });
+
+  // ===== 统计渲染 =====
+  function ao(n){
+    if (times.length < n) return null;
+    var arr = times.slice(-n).map(function(x){ return x.t; }).sort(function(a,b){ return a-b; });
+    arr.shift(); arr.pop();
+    var sum = arr.reduce(function(a,b){ return a+b; }, 0);
+    return sum / arr.length;
+  }
+  function render(){
+    var n = times.length;
+    document.getElementById("stN").textContent = n;
+    if (n === 0) {
+      ["stBest","stLast","stMean","stAo5","stAo12"].forEach(function(id){ document.getElementById(id).textContent = "—"; });
+      document.getElementById("history").innerHTML = "";
+      document.getElementById("empty").style.display = "";
+      return;
+    }
+    var ts = times.map(function(x){ return x.t; });
+    var best = Math.min.apply(null, ts), worst = Math.max.apply(null, ts);
+    var mean = ts.reduce(function(a,b){ return a+b; }, 0) / n;
+    document.getElementById("stBest").textContent = fmt(best);
+    document.getElementById("stLast").textContent = fmt(times[n-1].t);
+    document.getElementById("stMean").textContent = fmt(mean);
+    var a5 = ao(5), a12 = ao(12);
+    document.getElementById("stAo5").textContent = a5 === null ? "—" : fmt(a5);
+    document.getElementById("stAo12").textContent = a12 === null ? "—" : fmt(a12);
+
+    // 历史
+    var html = "";
+    var show = times.slice(-30);
+    var startIdx = n - show.length;
+    show.forEach(function(rec, i){
+      var isBest = rec.t === best;
+      html += '<li><span class="no">' + (startIdx + i + 1) + '</span>' +
+              '<span class="t' + (isBest ? ' best' : '') + '">' + fmt(rec.t) + '</span>' +
+              '<span class="sc" title="' + rec.s + '">' + rec.s + '</span></li>';
+    });
+    document.getElementById("history").innerHTML = html;
+    document.getElementById("empty").style.display = "none";
+  }
+
+  newScramble();
+  render();
+})();
+</script>
+</body>
+</html>

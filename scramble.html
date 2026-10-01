@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>打乱公式生成 · 速拧驿站-NA45</title>
+<style>
+  :root {
+    --bg: #f7f8fa; --surface: #ffffff; --text: #1f2430; --sub: #5a6272;
+    --brand: #e94f37; --brand-dark: #c73e28; --accent: #1b7fbd; --border: #e6e8ee;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+
+  header { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+  .nav { max-width: 1080px; margin: 0 auto; padding: 0 20px; height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; color: var(--text); text-decoration: none; white-space: nowrap; }
+  .logo .mini-cube { width: 24px; height: 24px; border-radius: 6px; background: conic-gradient(var(--brand) 0 25%, #fff 0 50%, var(--accent) 0 75%, #f5c518 0 100%); border: 1px solid #d8dbe2; flex-shrink: 0; }
+  .nav-links { display: flex; gap: 2px; flex-wrap: wrap; justify-content: flex-end; }
+  .nav-links a { text-decoration: none; color: var(--sub); padding: 7px 10px; border-radius: 8px; font-size: 14px; transition: all .2s; white-space: nowrap; }
+  .nav-links a:hover { color: var(--brand); background: #fdf0ee; }
+  .nav-links a.active { color: var(--brand); background: #fdf0ee; font-weight: 700; }
+
+  .wrap { max-width: 960px; margin: 0 auto; padding: 30px 20px 70px; text-align: center; }
+
+  h1 { font-size: 26px; font-weight: 800; margin-bottom: 8px; }
+  .desc { color: var(--sub); font-size: 14.5px; margin-bottom: 24px; }
+
+  /* 公式卡片 */
+  .scramble-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px 22px; margin-bottom: 14px;
+  }
+  .scramble-text {
+    font-family: Consolas, Menlo, monospace;
+    font-size: clamp(19px, 4vw, 28px); font-weight: 700; letter-spacing: 1px;
+    line-height: 1.6; word-spacing: 8px; min-height: 1.6em;
+  }
+  .ctrl-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 16px 0 30px; flex-wrap: wrap; }
+  .btn {
+    display: inline-block; padding: 11px 26px; border-radius: 10px; font-size: 15px;
+    font-weight: 600; cursor: pointer; border: none; transition: all .2s; text-decoration: none;
+  }
+  .btn-primary { background: var(--brand); color: #fff; }
+  .btn-primary:hover { background: var(--brand-dark); transform: translateY(-2px); }
+  .btn-outline { background: transparent; border: 1.5px solid var(--text); color: var(--text); }
+  .btn-outline:hover { background: var(--text); color: #fff; transform: translateY(-2px); }
+  select {
+    padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border);
+    font-size: 14px; color: var(--text); background: var(--surface); cursor: pointer;
+  }
+
+  /* ===== 3D 演示区 ===== */
+  .demo-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .demo-sub { font-size: 13.5px; color: var(--sub); margin-bottom: 16px; }
+  .scene {
+    position: relative; height: 400px; border-radius: 18px; overflow: hidden;
+    background: radial-gradient(700px 380px at 30% 20%, #3a4152 0%, #232833 55%, #1a1e27 100%);
+    border: 1px solid var(--border); cursor: grab; touch-action: none; user-select: none;
+  }
+  .scene:active { cursor: grabbing; }
+  .scene .hint3d {
+    position: absolute; left: 14px; bottom: 12px; font-size: 12.5px; color: rgba(255,255,255,.55);
+    pointer-events: none;
+  }
+  .scene .prog3d {
+    position: absolute; right: 14px; top: 12px; font-size: 13px; color: rgba(255,255,255,.75);
+    font-family: Consolas, Menlo, monospace; pointer-events: none;
+  }
+  .viewport { position: absolute; left: 50%; top: 50%; perspective: 1050px; }
+  .cube-view { position: absolute; transform-style: preserve-3d; width: 0; height: 0; }
+  .cubie { position: absolute; width: 0; height: 0; transform-style: preserve-3d; }
+  .f3d {
+    position: absolute; width: 53px; height: 53px; left: -26.5px; top: -26.5px;
+    border-radius: 7px; box-shadow: inset 0 0 0 2px rgba(0,0,0,.28);
+    backface-visibility: hidden;
+  }
+
+  /* 播放控制 */
+  .player {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    flex-wrap: wrap; margin: 18px 0 6px;
+  }
+  .pbtn {
+    padding: 10px 20px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); font-size: 14.5px; font-weight: 600;
+    cursor: pointer; transition: all .2s;
+  }
+  .pbtn:hover:not(:disabled) { background: #e9f3fa; border-color: #bcd9ec; }
+  .pbtn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .pbtn.primary:hover:not(:disabled) { background: var(--brand-dark); }
+  .pbtn:disabled { opacity: .38; cursor: not-allowed; }
+  .speed { display: flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--sub); }
+
+  /* 步骤 chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 12px 0 36px; }
+  .chip {
+    font-family: Consolas, Menlo, monospace; font-size: 13.5px; font-weight: 700;
+    padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--sub); cursor: pointer; transition: all .15s;
+  }
+  .chip.done { color: var(--text); background: #eef4f9; border-color: #d4e3ee; }
+  .chip.cur { background: var(--brand); border-color: var(--brand); color: #fff; transform: scale(1.12); }
+  .chip:hover { border-color: var(--accent); }
+
+  /* 展开图 */
+  .net-title { font-size: 15px; color: var(--sub); margin-bottom: 18px; }
+  .net { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+  .net-row { display: flex; gap: 7px; }
+  .face {
+    --cell: clamp(24px, 7.5vw, 40px);
+    display: grid; grid-template-columns: repeat(3, var(--cell)); grid-auto-rows: var(--cell);
+    gap: 4px; padding: 5px; background: #262a33; border-radius: 9px;
+  }
+  .sticker { border-radius: 5px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
+  .legend { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; margin-top: 26px; font-size: 13px; color: var(--sub); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 13px; height: 13px; border-radius: 3px; display: inline-block; border: 1px solid rgba(0,0,0,.12); }
+
+  .tips {
+    max-width: 620px; margin: 36px auto 0; text-align: left;
+    background: #fff8e6; border: 1px solid #f2e2b3; border-left: 4px solid #f5c518;
+    border-radius: 12px; padding: 16px 20px; font-size: 14px; color: #6b5716;
+  }
+  .tips b { color: #4d3f0f; }
+
+  footer { background: var(--text); color: #aab0bd; text-align: center; padding: 26px 20px; font-size: 13px; }
+
+  @media (max-width: 560px) {
+    .viewport { transform: scale(.72); }
+    .scene { height: 330px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <nav class="nav">
+    <a class="logo" href="index.html"><span class="mini-cube"></span> 速拧驿站-NA45</a>
+    <div class="nav-links">
+      <a href="index.html">首页</a>
+      <a href="index.html#newbie">新人区</a>
+      <a href="index.html#speed">40s提速区</a>
+      <a href="index.html#videos">教学视频</a>
+      <a href="timer.html">计时器</a>
+      <a href="scramble.html" class="active">打乱公式</a>
+    </div>
+  </nav>
+</header>
+
+<div class="wrap">
+  <h1>三阶打乱公式生成器</h1>
+  <p class="desc">生成随机打乱公式，3D 魔方一步一步演示怎么拧，跟着做就能得到完全相同的打乱状态</p>
+
+  <div class="scramble-card">
+    <div class="scramble-text" id="scramble">—</div>
+  </div>
+
+  <div class="ctrl-row">
+    <select id="lenSel" title="打乱步数">
+      <option value="15">15 步</option>
+      <option value="20" selected>20 步（标准）</option>
+      <option value="25">25 步</option>
+      <option value="30">30 步</option>
+    </select>
+    <button class="btn btn-primary" id="btnGen">新的打乱</button>
+    <button class="btn btn-outline" id="btnCopy">复制公式</button>
+  </div>
+
+  <p class="demo-title">3D 打乱演示</p>
+  <p class="demo-sub">拖动魔方可以旋转视角 · 点击下方公式步骤可跳转</p>
+
+  <div class="scene" id="scene">
+    <div class="viewport"><div class="cube-view" id="cubeView"></div></div>
+    <span class="hint3d">↻ 拖动旋转视角</span>
+    <span class="prog3d" id="prog3d">0 / 0</span>
+  </div>
+
+  <div class="player">
+    <button class="pbtn primary" id="btnPlay">▶ 自动播放</button>
+    <button class="pbtn" id="btnPrev" title="撤销一步">⟲ 上一步</button>
+    <button class="pbtn" id="btnNext" title="执行下一步">下一步 ⟳</button>
+    <button class="pbtn" id="btnReset">重置</button>
+    <span class="speed">
+      速度
+      <select id="speedSel">
+        <option value="800">慢</option>
+        <option value="450" selected>中</option>
+        <option value="220">快</option>
+      </select>
+    </span>
+  </div>
+
+  <div class="chips" id="chips"></div>
+
+  <p class="net-title">当前状态展开图（跟随演示进度，白顶绿前标准配色）</p>
+  <div class="net">
+    <div class="net-row"><div class="face" id="fU"></div></div>
+    <div class="net-row">
+      <div class="face" id="fL"></div>
+      <div class="face" id="fF"></div>
+      <div class="face" id="fR"></div>
+      <div class="face" id="fB"></div>
+    </div>
+    <div class="net-row"><div class="face" id="fD"></div></div>
+  </div>
+
+  <div class="legend">
+    <span><i style="background:#ffffff"></i> U 白（顶）</span>
+    <span><i style="background:#ffd500"></i> D 黄（底）</span>
+    <span><i style="background:#009b48"></i> F 绿（前）</span>
+    <span><i style="background:#0046ad"></i> B 蓝（后）</span>
+    <span><i style="background:#b71234"></i> R 红（右）</span>
+    <span><i style="background:#ff5800"></i> L 橙（左）</span>
+  </div>
+
+  <div class="tips">
+    <b>用法：</b>先让魔方白面朝上、绿面朝前，跟着 3D 演示一步一步拧（R = 右面顺时针 90°，R' = 逆时针，R2 = 180°）。演示完成后，展开图就是你这颗魔方六个面应该呈现的样子，核对无误即可开始计时练习。
+  </div>
+</div>
+
+<footer>速拧驿站-NA45 · 打乱公式生成器</footer>
+
+<script>
+(function(){
+  "use strict";
+  /* ================= 打乱生成 ================= */
+  var FACES = ["U","D","R","L","F","B"];
+  var AXIS  = {U:0,D:0,R:1,L:1,F:2,B:2};
+  var SUF   = ["", "'", "2"];
+  function genScramble(len){
+    var seq = [], last = -1, last2 = -1;
+    while (seq.length < len) {
+      var f = Math.floor(Math.random()*6);
+      if (f === last) continue;
+      if (last2 >= 0 && AXIS[FACES[f]] === AXIS[FACES[last]] && AXIS[FACES[last]] === AXIS[FACES[last2]]) continue;
+      seq.push(FACES[f] + SUF[Math.floor(Math.random()*3)]);
+      last2 = last; last = f;
+    }
+    return seq.join(" ");
+  }
+
+  /* ============ 展开图模拟（魔方坐标系，已验证） ============ */
+  var FACES_ALL = ["U","R","F","D","L","B"];
+  var COLOR = {U:"#ffffff", R:"#b71234", F:"#009b48", D:"#ffd500", L:"#ff5800", B:"#0046ad"};
+  function stickerPos(face, i){
+    var r = Math.floor(i/3), c = i%3;
+    switch(face){
+      case "U": return [[c-1,  1, r-1], [0, 1, 0]];
+      case "D": return [[c-1, -1, 1-r], [0,-1, 0]];
+      case "F": return [[c-1, 1-r,  1], [0, 0, 1]];
+      case "B": return [[1-c, 1-r, -1], [0, 0,-1]];
+      case "R": return [[ 1, 1-r, c-1], [ 1,0, 0]];
+      case "L": return [[-1, 1-r, c-1], [-1,0, 0]];
+    }
+  }
+  var ROT = {
+    U: function(v){ return [-v[2], v[1],  v[0]]; },
+    D: function(v){ return [ v[2], v[1], -v[0]]; },
+    R: function(v){ return [ v[0], v[2], -v[1]]; },
+    L: function(v){ return [ v[0],-v[2],  v[1]]; },
+    F: function(v){ return [ v[1],-v[0],  v[2]]; },
+    B: function(v){ return [-v[1], v[0],  v[2]]; }
+  };
+  var AXIS_IDX = {U:1, D:1, R:0, L:0, F:2, B:2};
+  var LAYER = {U:1, D:-1, R:1, L:-1, F:1, B:-1};
+  var STICKERS = [], MAP = {};
+  FACES_ALL.forEach(function(f){
+    for (var i = 0; i < 9; i++) {
+      var pn = stickerPos(f, i);
+      STICKERS.push({ face: f, i: i, p: pn[0], n: pn[1] });
+      MAP[pn[0].join() + "|" + pn[1].join()] = { face: f, i: i };
+    }
+  });
+  function solvedNet(){
+    var s = {};
+    FACES_ALL.forEach(function(f){ s[f] = [f,f,f,f,f,f,f,f,f]; });
+    return s;
+  }
+  function applyMoveNet(state, move){
+    var face = move[0], suffix = move.slice(1);
+    var times = suffix === "2" ? 2 : (suffix === "'" ? 3 : 1);
+    var out = {};
+    FACES_ALL.forEach(function(f){ out[f] = state[f].slice(); });
+    var ax = AXIS_IDX[face], layer = LAYER[face];
+    STICKERS.forEach(function(s){
+      if (s.p[ax] !== layer) return;
+      var p = s.p, n = s.n;
+      for (var k = 0; k < times; k++) { p = ROT[face](p); n = ROT[face](n); }
+      var t = MAP[p.join() + "|" + n.join()];
+      out[t.face][t.i] = state[s.face][s.i];
+    });
+    return out;
+  }
+  function applyMovesNet(moves){
+    var state = solvedNet();
+    moves.forEach(function(m){ state = applyMoveNet(state, m); });
+    return state;
+  }
+
+  /* ============ 3D 模拟（CSS 坐标系：x 右 y 下 z 朝观察者，与展开图模拟已交叉验证一致） ============ */
+  var PITCH = 56, HALF = 28;
+  function rotMat(axis, deg){
+    var a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+    if (axis === "x") return [[1,0,0],[0,c,-s],[0,s,c]];
+    if (axis === "y") return [[c,0,s],[0,1,0],[-s,0,c]];
+    return [[c,-s,0],[s,c,0],[0,0,1]];
+  }
+  function matMul(A, B){
+    var C = [[0,0,0],[0,0,0],[0,0,0]];
+    for (var i = 0; i < 3; i++) for (var j = 0; j < 3; j++)
+      for (var k = 0; k < 3; k++) C[i][j] += A[i][k] * B[k][j];
+    return C;
+  }
+  function matVec(A, v){
+    return [
+      A[0][0]*v[0] + A[0][1]*v[1] + A[0][2]*v[2],
+      A[1][0]*v[0] + A[1][1]*v[1] + A[1][2]*v[2],
+      A[2][0]*v[0] + A[2][1]*v[1] + A[2][2]*v[2]
+    ];
+  }
+  function roundM(A){ return A.map(function(r){ return r.map(function(x){ return Math.round(x); }); }); }
+  function roundV(v){ return v.map(function(x){ return Math.round(x); }); }
+
+  var FACE_DEFS = [
+    { key: "U", n: [0,-1,0], li: 1, lv: -1 },
+    { key: "D", n: [0, 1,0], li: 1, lv:  1 },
+    { key: "F", n: [0,0, 1], li: 2, lv:  1 },
+    { key: "B", n: [0,0,-1], li: 2, lv: -1 },
+    { key: "R", n: [1, 0,0], li: 0, lv:  1 },
+    { key: "L", n: [-1,0,0], li: 0, lv: -1 }
+  ];
+  var M3 = {
+    U: { axis: "y", sign: -1, li: 1, lv: -1 },
+    D: { axis: "y", sign:  1, li: 1, lv:  1 },
+    R: { axis: "x", sign:  1, li: 0, lv:  1 },
+    L: { axis: "x", sign: -1, li: 0, lv: -1 },
+    F: { axis: "z", sign:  1, li: 2, lv:  1 },
+    B: { axis: "z", sign: -1, li: 2, lv: -1 }
+  };
+  var FACE_TRANSFORMS = {
+    U: "rotateX(90deg) translateZ(" + HALF + "px)",
+    D: "rotateX(-90deg) translateZ(" + HALF + "px)",
+    F: "translateZ(" + HALF + "px)",
+    B: "rotateY(180deg) translateZ(" + HALF + "px)",
+    R: "rotateY(90deg) translateZ(" + HALF + "px)",
+    L: "rotateY(-90deg) translateZ(" + HALF + "px)"
+  };
+  function qOf(move){
+    var suf = move.slice(1);
+    return suf === "2" ? 2 : (suf === "'" ? -1 : 1);
+  }
+  function invMove(move){
+    if (move.length === 1) return move + "'";
+    if (move[1] === "'") return move[0];
+    return move; // 2 的逆还是 2
+  }
+  function rotOf(move){ // 动画/烘焙用的 90°(×q) 旋转矩阵
+    var m = M3[move[0]];
+    return rotMat(m.axis, m.sign * qOf(move) * 90);
+  }
+  function layerOf(move){ return M3[move[0]]; }
+
+  /* ---------- 3D 状态 + DOM ---------- */
+  var cubeView = document.getElementById("cubeView");
+  var cubies = []; // {p, R, colors, el}
+
+  function buildCubies(){
+    cubeView.innerHTML = "";
+    cubies = [];
+    for (var x = -1; x <= 1; x++) for (var y = -1; y <= 1; y++) for (var z = -1; z <= 1; z++) {
+      if (x === 0 && y === 0 && z === 0) continue;
+      var colors = {};
+      FACE_DEFS.forEach(function(fd){ colors[fd.key] = ([x,y,z][fd.li] === fd.lv) ? fd.key : null; });
+      var el = document.createElement("div");
+      el.className = "cubie";
+      FACE_DEFS.forEach(function(fd){
+        var f = document.createElement("div");
+        f.className = "f3d";
+        f.style.background = colors[fd.key] ? COLOR[colors[fd.key]] : "#16181d";
+        f.style.transform = FACE_TRANSFORMS[fd.key];
+        el.appendChild(f);
+      });
+      cubeView.appendChild(el);
+      cubies.push({ p: [x,y,z], R: [[1,0,0],[0,1,0],[0,0,1]], colors: colors, el: el });
+    }
+    renderCubies();
+  }
+
+  function cubieTransform(R, p, worldRot){
+    // worldRot 作用于 (p, R)：世界位置 = worldRot·p，世界姿态 = worldRot·R
+    var W = worldRot ? matMul(worldRot, R) : R;
+    var pp = worldRot ? matVec(worldRot, p) : p;
+    var m = [
+      W[0][0], W[1][0], W[2][0], 0,
+      W[0][1], W[1][1], W[2][1], 0,
+      W[0][2], W[1][2], W[2][2], 0,
+      pp[0] * PITCH, pp[1] * PITCH, pp[2] * PITCH, 1
+    ];
+    return "matrix3d(" + m.join(",") + ")";
+  }
+  function renderCubies(worldRot, layer){
+    // worldRot 只作用于指定层的块（layer 为 null 时全部静止渲染）
+    cubies.forEach(function(c){
+      var wr = (worldRot && layer && c.p[layer.li] === layer.lv) ? worldRot : null;
+      c.el.style.transform = cubieTransform(c.R, c.p, wr);
+    });
+  }
+
+  /* ---------- 逐步动画 ---------- */
+  var moves = [], step = 0;      // step = 已执行的步数
+  var animating = false, playing = false, playTimer = 0;
+
+  function moveAngle(move){ var m = M3[move[0]]; return m.sign * qOf(move) * 90; }
+
+  function animateMove(move, duration, cb){
+    var layer = layerOf(move);
+    var target = moveAngle(move);
+    var inLayer = cubies.filter(function(c){ return c.p[layer.li] === layer.lv; });
+    var t0 = performance.now();
+    animating = true;
+    updateUI();
+    (function frame(){
+      var t = Math.min(1, (performance.now() - t0) / duration);
+      var e = t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2; // easeInOutCubic
+      var rot = rotMat(layer.axis, target * e);
+      renderCubies(rot, layer);
+      if (t < 1) { requestAnimationFrame(frame); return; }
+      // 烘焙最终状态
+      var Rm = rotMat(layer.axis, target);
+      cubies.forEach(function(c){
+        if (c.p[layer.li] !== layer.lv) return;
+        c.p = roundV(matVec(Rm, c.p));
+        c.R = roundM(matMul(Rm, c.R));
+      });
+      renderCubies();
+      animating = false;
+      if (cb) cb();
+    })();
+  }
+
+  function doStep(cb){
+    if (animating || step >= moves.length) { if (cb) cb(); return; }
+    var mv = moves[step];
+    step++;
+    animateMove(mv, +document.getElementById("speedSel").value, function(){
+      syncNet(); updateUI();
+      if (cb) cb();
+    });
+  }
+  function undoStep(cb){
+    if (animating || step <= 0) { if (cb) cb(); return; }
+    var mv = invMove(moves[step - 1]);
+    step--;
+    animateMove(mv, +document.getElementById("speedSel").value, function(){
+      syncNet(); updateUI();
+      if (cb) cb();
+    });
+  }
+  function resetAll(){
+    stopPlay();
+    buildCubies();
+    step = 0;
+    syncNet(); updateUI();
+  }
+  function jumpTo(n){
+    if (animating) return;
+    stopPlay();
+    n = Math.max(0, Math.min(moves.length, n));
+    buildCubies();
+    var Rm = null;
+    for (var i = 0; i < n; i++) {
+      var layer = layerOf(moves[i]);
+      Rm = rotMat(layer.axis, moveAngle(moves[i]));
+      cubies.forEach(function(c){
+        if (c.p[layer.li] !== layer.lv) return;
+        c.p = roundV(matVec(Rm, c.p));
+        c.R = roundM(matMul(Rm, c.R));
+      });
+    }
+    step = n;
+    renderCubies();
+    syncNet(); updateUI();
+  }
+
+  /* ---------- 自动播放 ---------- */
+  function stopPlay(){
+    playing = false;
+    clearTimeout(playTimer);
+    updateUI();
+  }
+  function playLoop(){
+    if (!playing) return;
+    if (step >= moves.length) { stopPlay(); return; }
+    doStep(function(){
+      if (!playing) return;
+      if (step >= moves.length) { stopPlay(); return; }
+      playTimer = setTimeout(playLoop, 140);
+    });
+  }
+
+  /* ---------- UI ---------- */
+  var btnPlay = document.getElementById("btnPlay");
+  btnPlay.addEventListener("click", function(){
+    if (playing) { stopPlay(); return; }
+    if (step >= moves.length) jumpTo(0);
+    playing = true; updateUI();
+    playLoop();
+  });
+  document.getElementById("btnNext").addEventListener("click", function(){ stopPlay(); doStep(); });
+  document.getElementById("btnPrev").addEventListener("click", function(){ stopPlay(); undoStep(); });
+  document.getElementById("btnReset").addEventListener("click", resetAll);
+
+  var chipsEl = document.getElementById("chips");
+  function buildChips(){
+    chipsEl.innerHTML = "";
+    moves.forEach(function(mv, i){
+      var c = document.createElement("span");
+      c.className = "chip";
+      c.textContent = mv;
+      c.addEventListener("click", (function(k){ return function(){ jumpTo(k); }; })(i + 1));
+      chipsEl.appendChild(c);
+    });
+  }
+  function updateUI(){
+    document.getElementById("prog3d").textContent = step + " / " + moves.length;
+    document.getElementById("btnNext").disabled = animating || step >= moves.length;
+    document.getElementById("btnPrev").disabled = animating || step <= 0;
+    document.getElementById("btnReset").disabled = animating;
+    btnPlay.textContent = playing ? "❚❚ 暂停" : (step >= moves.length ? "↻ 重新播放" : "▶ 自动播放");
+    var chips = chipsEl.children;
+    for (var i = 0; i < chips.length; i++) {
+      chips[i].className = "chip" + (i < step ? " done" : "") + (i === step ? " cur" : "");
+    }
+  }
+
+  function syncNet(){
+    var state = applyMovesNet(moves.slice(0, step));
+    FACES_ALL.forEach(function(f){
+      var el = document.getElementById("f" + f), html = "";
+      state[f].forEach(function(c){ html += '<div class="sticker" style="background:' + COLOR[c] + '"></div>'; });
+      el.innerHTML = html;
+    });
+  }
+
+  /* ---------- 视角拖拽 ---------- */
+  var scene = document.getElementById("scene");
+  var view = { rx: -30, ry: -35 };
+  function applyView(){
+    document.getElementById("cubeView").style.transform =
+      "rotateX(" + view.rx + "deg) rotateY(" + view.ry + "deg)";
+  }
+  var dragging = false, lastX = 0, lastY = 0;
+  scene.addEventListener("pointerdown", function(e){
+    dragging = true; lastX = e.clientX; lastY = e.clientY;
+    scene.setPointerCapture(e.pointerId);
+  });
+  scene.addEventListener("pointermove", function(e){
+    if (!dragging) return;
+    view.ry += (e.clientX - lastX) * 0.4;
+    view.rx -= (e.clientY - lastY) * 0.4;
+    view.rx = Math.max(-89, Math.min(89, view.rx));
+    lastX = e.clientX; lastY = e.clientY;
+    applyView();
+  });
+  function endDrag(){ dragging = false; }
+  scene.addEventListener("pointerup", endDrag);
+  scene.addEventListener("pointercancel", endDrag);
+
+  /* ---------- 打乱生成 / 复制 ---------- */
+  var elScram = document.getElementById("scramble");
+  function regen(){
+    var sc = genScramble(parseInt(document.getElementById("lenSel").value, 10));
+    moves = sc.split(" ");
+    elScram.textContent = sc;
+    buildChips();
+    resetAll();
+  }
+  document.getElementById("btnGen").addEventListener("click", regen);
+  document.getElementById("lenSel").addEventListener("change", regen);
+  document.getElementById("speedSel").addEventListener("change", function(){});
+
+  document.getElementById("btnCopy").addEventListener("click", function(){
+    var btn = this;
+    function done(){ btn.textContent = "已复制 ✓"; setTimeout(function(){ btn.textContent = "复制公式"; }, 1500); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(moves.join(" ")).then(done).catch(function(){ fallbackCopy(done); });
+    } else { fallbackCopy(done); }
+  });
+  function fallbackCopy(done){
+    var ta = document.createElement("textarea");
+    ta.value = moves.join(" ");
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); done(); } catch(e){}
+    document.body.removeChild(ta);
+  }
+
+  /* ---------- 启动 ---------- */
+  buildCubies();
+  applyView();
+  regen();
+})();
+</script>
+</body>
+</html>
